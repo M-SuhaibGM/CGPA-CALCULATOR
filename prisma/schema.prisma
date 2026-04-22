@@ -1,0 +1,93 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ... existing models (User, Account, Student, Semester, Subject)
+
+model Department {
+  id        Int       @id @default(autoincrement())
+  name      String    @unique // e.g., "Computer Science", "Information Technology"
+  code      String    @unique // e.g., "CS", "IT"
+  students  Student[]
+  createdAt DateTime  @default(now())
+}
+
+model GradeScale {
+  id         Int    @id @default(autoincrement())
+  grade      String // e.g., "A", "B+", "B"
+  minMarks   Int // e.g., 80
+  maxMarks   Int // e.g., 100
+  gradePoint Float // e.g., 4.0
+}
+
+// UPDATE: Modify your Student model to link to Department
+model Student {
+  id              Int         @id @default(autoincrement())
+  registrationNo  String      @unique
+  name            String
+  currentSemester Int
+  departmentId    Int? // Added relation field
+  department      Department? @relation(fields: [departmentId], references: [id])
+  semesters       Semester[]
+  createdAt       DateTime    @default(now())
+}
+
+model Semester {
+  id           Int       @id @default(autoincrement())
+  semesterNo   Int
+  semesterCgpa Float
+  studentId    Int
+  student      Student   @relation(fields: [studentId], references: [id])
+  subjects     Subject[]
+}
+
+model Subject {
+  id         Int      @id @default(autoincrement())
+  name       String
+  marks      Int
+  credits    Int
+  semesterId Int
+  semester   Semester @relation(fields: [semesterId], references: [id])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  username      String?   @unique
+  email         String?   @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  accounts      Account[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                       String  @id @default(cuid())
+  userId                   String
+  type                     String
+  provider                 String
+  providerAccountId        String
+  refresh_token            String? @db.Text
+  access_token             String? @db.Text
+  expires_at               Int?
+  token_type               String?
+  scope                    String?
+  id_token                 String? @db.Text
+  session_state            String?
+  refresh_token_expires_in Int?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
